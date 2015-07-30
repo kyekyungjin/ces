@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="cesApp">
+<head>
+<title>LG - AllJoyn TV App.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" href="./css/style.css" type="text/css" />
+<link rel="stylesheet" href="./css/toastr.min.css" type="text/css" />
+<!-- <script src="./js/jquery-1.11.1.min.js"></script> -->
+<script src="./js/jquery.min.js"></script>
+<script src="./js/angular.min.js"></script>
+<script src="./js/toastr.min.js"></script>
+<script src="./js/String.js"></script>
+<!-- 메인페이지 제어 스크립트 파일 -->
+<script type="text/javascript" src="./js/common.js"></script>
+
+<!-- Device 제어 스크립트 파일 -->
+<script type="text/javascript" src="./js/process.js"></script>
+
+<!-- key 제어 스크립트 파일 -->
+<script type="text/javascript" src="./js/keymap.js"></script>
+
+<script type="text/javascript">
+<!--
+	$(function()
+	{
+
+		// 동영상 플레이 영역을 선택하면 메뉴가 나타남.
+		$("#Vod").mousedown(function()
+		{
+			if($("#Page").css("display") == "none")
+			{
+				$("#Page").fadeIn(200);
+				$("#mainMenu").fadeIn(200);
+			}
+			else
+			{
+				$("#Page").fadeOut(200);
+			}
+		});
+		
+		$("#HandleDim").mouseover(function() {
+			$("#Handle").addClass("on");
+		}).mouseout(function() {
+			$("#Handle").removeClass("on");
+		});
+		
+		$("#Handle").mousedown(function() {
+			$(this).removeClass("on");
+			$("#Menu").addClass("on");
+			$("#mainMenu").addClass("move");
+			if ($("#Mode").css("display") != "none") {
+				$("#Energy").addClass("move");
+			}
+		});
+		
+		$("#Menu span").mousedown(function() {
+			if ($(this).prop("class") == "sel") {
+				$(this).removeClass("sel");
+			} else {
+				if ($(this).prop("class") != "energy") {
+					$(this).addClass("sel");
+				}
+			}
+		});
+
+		$("#Vod, #MainPage").mouseover(function() {
+			$("#Menu").removeClass("on");
+			$("#mainMenu").removeClass("move");
+			$("div.Energy").removeClass("move");
+		});
+		
+		$("#mainMenu a").mousedown(function() {
+			$("#HandleDim").addClass("none");
+		});
+		
+		$("#mainMenu a").mouseover(function() {
+			$(this).children("div.origin").css("opacity", "0");
+			$(this).children("div.status").css("opacity", "1");
+		}).mouseout(function() {
+			$(this).children("div.origin").css("opacity", "1");
+			$(this).children("div.status").css("opacity", "0");
+		});
+		
+		// 초기 setting
+		$(window).on("load", function()
+		{
+			// housework mode : off
+			houseSwitch('off');
+			// sleeping mode : off
+			sleepSwitch('off');
+
+			// Device power on/off
+			deviceSwitch('aircon', 'off');	// 에어컨
+			deviceSwitch('washer', 'off');	// 세탁기
+			deviceSwitch('dryer', 'off');	// 건조기
+			deviceSwitch('stand', 'off');	// Stand Light
+			deviceSwitch('down', 'off');	// Down Light
+			deviceSwitch('surface', 'off');	// Surface Mount Light
+			deviceSwitch('air', 'off');		// 공기청정기
+
+			deeplink();
+
+			// $("#washerButton").attr("class","on");
+			// if ($("input[name=washer_remote]").val() == "on") {
+			// 	$("#washer_remote").removeClass("inactive");
+			// 	deviceSwitch('washer', 'on');
+			// } else {
+			// 	$("#washer_remote").addClass("inactive");
+			// 	deviceSwitch('washer', 'off');
+			// }
+			
+			// $("#dryerButton").attr("class","on");
+			// if ($("input[name=dryer_remote]").val() == "on") {
+			// 	$("#dryer_remote").removeClass("inactive");
+			// 	deviceSwitch('dryer', 'on');
+			// } else {
+			// 	$("#dryer_remote").addClass("inactive");
+			// 	deviceSwitch('dryer', 'off');
+			// }
+			
+			// document.main.washer_remote.value = "on";
+			// document.main.dryer_remote.value = "on";
+			
+			
+			// $("div.vacuumBtns a").mousedown(function() {
+			// 	$("div.vacuumBtns a").removeClass("sel");
+			// 	$(this).addClass("sel");
+			// });
+		});
+	});
+//-->
+</script>
+
+</head>
+<body ng-controller="BusController" onkeydown="processKeyDown(event);" oncontextmenu="return false" ondragstart="return false" onselectstart="return false" onmouseon="mouse_onoff_action();" onmouseoff="mouse_onoff_action();">
+
+<div id="wrap">
+	<!-- Menu Handler -->
+	<div id="HandleDim">
+		<span id="Handle" class="Handler"></span>
+	</div>
+	
+	<!-- Main menu -->
+	<div id="Menu">
+		<div class="mainMenu">
+			<span ng-click="onHouseworkModeClicked()">Do Housework</span>
+			<span ng-click="onSleepModeClicked()">Go To Sleep</span>
+			<span ng-click="onRestModeClicked()">Get Some Rest</span>
+			<span class="energy" ng-click="onEnergyMonitoringClicked()">Energy Monitoring</span>
+		</div>
+	</div>
+	
+	<div id="Header">
+		<div class="Logo" ng-click="onLogoClick()">LG Logo</div>
+	</div>
+
+	<!-- Page -->
+	<div id="Page" style="display:none;">
+	<!-- form start -->
+	<form name="main">
+		<!-- Main -->
+		<div id="MainPage">
+			<div class="Board">
+				<input type="hidden" name="device" value="" />
+				
+				<!-- 닫기 -->
+				<div class="pClose"><a ng-click="onBoardCloseClicked()">Close</a></div>
+				<!-- 이전 -->
+				<div class="pBack"><a id="pBack" ng-click="onBoardBackClicked()" style="display:none;">Back</a></div>
+				
+				<!-- 메인 메뉴 -->
+				<div id="mainMenu" class="selMode">
+					<ul>
+						<li id="airconButton" class="" ng-class="{'on' : ActiveDeviceList.Airconditioner}">
+							<a ng-click="onAirconditionerClicked()">
+							<!-- <a onmousedown="goMenu('aircon');"> -->
+								<div class="origin">
+									<span class="menu1"></span>
+									<span class="txt">Air<br />Conditioner</span>
+								</div>
+								
+								<div class="status">
+									<label class="title">Current<br />Temperature</label>
+									<span class="value">{{Airconditioner.set_CurrentTemperature}}℉</span>
+									<label class="title">Set<br />Temperature</label>
+									<span class="value">{{Airconditioner.set_temperature}}℉</span>
+								</div>
+							</a>
+						</li>
+						<li id="washerButton" class="" ng-class="{'on' : ActiveDeviceList.WashingMachine}">
+							<a ng-click="onWasherClicked()">
+							<!-- <a onmousedown="goMenu('cleaner');"> -->
+								<div class="origin">
+									<span class="menu2"></span>
+									<span class="txt">Washer+Dryer</span>
+								</div>
+								
+								<div class="status">
+									<label class="title">Remaining<br />Time</label>
+									<span class="value">{{WashingMachine.RemainingTime}}</span>
+									<label class="title">Fresh Care</label>
+									<span class="value">{{WashingMachine.WrinkleCareStatusStr}}</span>
+								</div>
+							</a>
+						</li>
+						<li id="refrigeratorButton" class="" ng-class="{'on' : ActiveDeviceList.Refrigerator}">
+							<a ng-click="onRefrigeratorClicked()">
+							<!-- <a onmousedown="goMenu('fridge');"> -->
+								<div class="origin">
+									<span class="menu3"></span>
+									<span class="txt">Refrigerator</span>
+								</div>
+								
+								<div class="status">
+									<label class="title">Smart Saving</label>
+									<span class="value">{{Refrigerator.RefrigeratorSmartSavingStatusValueStr}}</span>
+									<label class="title">Ice Plus</label>
+									<span class="value">{{Refrigerator.RefrigeratorIcePlusStatusValueStr}}</span>
+								</div>
+							</a>
+						</li>
+						<li id="vacuumButton" class="" ng-class="{'on' : ActiveDeviceList.Roboking}">
+							<a ng-click="onRobokingClicked()">
+							<!-- <a onmousedown="goMenu('vacuum');"> -->
+								<div class="origin">
+									<span class="menu4"></span>
+									<span class="txt">Robot<br />Cleaner</span>
+								</div>
+								
+								<div class="status">
+									<label class="title">Device Status</label>
+									<span class="value">{{Roboking.CleanOperationStatusPropertyStr}}</span>
+								</div>
+							</a>
+						</li>
+						<li id="ovenButton" class="" ng-class="{'on' : ActiveDeviceList.Oven}">
+							<a ng-click="onOvenClicked()">
+								<div class="origin">
+									<span class="menu5"></span>
+									<span class="txt">Oven</span>
+								</div>
+								
+								<div class="status">
+									<label class="title">Device Status</label>
+									<span class="value">{{Oven.OvenCookMenu}}</span>
+									<label class="title">Remaining Time</label>
+									<span class="value">{{Oven.OvenRemainingTimeValue}}</span>
+								</div>
+							</a>
+						</li>
+						<li id="standlightButton" class="" ng-class="{'on' : ActiveDeviceList.Light}">
+							<a onmousedown="goMenu('stand');">
+								<div class="origin">
+									<span class="menu6"></span>
+									<span class="txt">Stand Light</span>
+								</div>
+								
+								<div class="status">
+									<label class="title">Power</label>
+									<span class="value">{{Light.OnOffStand}}</span>
+								</div>
+							</a>
+						</li>
+						<li id="downlightButton" class="" ng-class="{'on' : ActiveDeviceList.Light}">
+							<a onmousedown="goMenu('down');">
+								<div class="origin">
+									<span class="menu8"></span>
+									<span class="txt">Down Light</span>
+								</div>
+								
+								<div class="status">
+									<label class="title">Power</label>
+									<span class="value">{{Light.OnOffDown}}</span>
+								</div>
+							</a>
+						</li>
+						<li id="mountlightButton" class="" ng-class="{'on' : ActiveDeviceList.Light}">
+							<a onmousedown="goMenu('surface');">
+								<div class="origin">
+									<span class="menu7"></span>
+									<span class="txt">Ceiling<br />Light</span>
+								</div>
+								
+								<div class="status">
+									<label class="title">Power</label>
+									<span class="value">{{Light.OnOffSurface}}</span>
+								</div>
+							</a>
+						</li>
+						<li id="aircleanerButton" class="" ng-class="{'on' : ActiveDeviceList.SmartPlug_Aircleaner}">
+							<a ng-click="onAircleanerClicked()">						
+							<!-- <a onmousedown="goMenu('air');"> -->
+								<div class="origin">
+									<span class="menu9"></span>
+									<span class="txt">Air Cleaner</span>
+								</div>
+								
+								<div class="status">
+									<label class="title">Power</label>
+									<span class="value">{{SmartPlug.SmartPlug_Aircleaner.OnOff}}</span>
+								</div>
+							</a>
+						</li>
+					</ul>
+				</div>
+				
+				<!-- mode 선택 -->
+				<div id="Mode" style="display:none;" class="selMode">
+					<!-- mode 관련 form -->
+					<input type="hidden" name="house" value="" />
+					<input type="hidden" name="sleeping" value="" />
+					
+					<!-- Energy Monitoring -->
+					<div id="Energy" class="Energy">
+						<ul>
+							<li class="tv">
+								<span id="TV" class="kwh">{{ SmartPlug.SmartPlug_TV.PowerPropertyStr }}W</span>
+								<div class="graph">
+									<span ng-style="GraphStyle.SmartPlug_TV"></span>
+								</div>
+								<span class="ico"></span>
+								<span class="device">TV</span>
+							</li>
+							<li class="aircon">
+								<span id="Aircon" class="kwh">{{ SmartPlug.SmartPlug_AirConditioner.PowerPropertyStr }}W</span>
+								<div class="graph">
+									<span ng-style="GraphStyle.SmartPlug_AirConditioner"></span>
+								</div>
+								<span class="ico"></span>
+								<span class="device">Air<br />Conditioner</span>
+							</li>
+							<li class="washer">
+								<span id="Wahser" class="kwh">{{ SmartPlug.SmartPlug_Washer.PowerPropertyStr }}W</span>
+								<div class="graph">
+									<span ng-style="GraphStyle.SmartPlug_Washer"></span>
+								</div>
+								<span class="ico"></span>
+								<span class="device">Washer</span>
+							</li>
+							<li class="dryer">
+								<span id="Dryer" class="kwh">{{ SmartPlug.SmartPlug_Dryer.PowerPropertyStr }}W</span>
+								<div class="graph">
+									<span ng-style="GraphStyle.SmartPlug_Dryer"></span>
+								</div>
+								<span class="ico"></span>
+								<span class="device">Dryer</span>
+							</li>
+							<li class="fridge">
+								<span id="Refrigerator" class="kwh">{{ SmartPlug.SmartPlug_Refrigerator.PowerPropertyStr }}W</span>
+								<div class="graph">
+									<span ng-style="GraphStyle.SmartPlug_Refrigerator"></span>
+								</div>
+								<span class="ico"></span>
+								<span class="device">Refrigerator</span>
+							</li>
+							<li class="vacuum">
+								<span id="Vacuum" class="kwh">{{ SmartPlug.SmartPlug_Roboking.PowerPropertyStr }}W</span>
+								<div class="graph">
+									<span ng-style="GraphStyle.SmartPlug_Roboking"></span>
+								</div>
+								<span class="ico"></span>
+								<span class="device">Robot<br />Cleaner</span>
+							</li>
+							<li class="oven">
+								<span id="Oven" class="kwh">{{ SmartPlug.SmartPlug_Oven.PowerPropertyStr }}W</span>
+								<div class="graph">
+									<span ng-style="GraphStyle.SmartPlug_Oven"></span>
+								</div>
+								<span class="ico"></span>
+								<span class="device">Oven</span>
+							</li>
+							<li class="stand">
+								<span id="StandLight" class="kwh">{{ SmartPlug.SmartPlug_Light.PowerPropertyStr }}W</span>
+								<div class="graph">
+									<span ng-style="GraphStyle.SmartPlug_Light"></span>
+								</div>
+								<span class="ico"></span>
+								<span class="device">Stand<br />Light</span>
+							</li>
+<!-- 							<li class="down">
+								<span id="DownLight" class="kwh">{{ SmartPlug.SmartPlug_Light.PowerPropertyStr }}W</span>
+								<div class="graph">
+									<span ng-style="GraphStyle.SmartPlug_Light"></span>
+								</div>
+								<span class="ico"></span>
+								<span class="device">Down<br />Light</span>
+							</li>
+							<li class="surface">
+								<span id="SurfaceLight" class="kwh">{{ SmartPlug.SmartPlug_Light.PowerPropertyStr }}W</span>
+								<div class="graph">
+									<span ng-style="GraphStyle.SmartPlug_Light"></span>
+								</div>
+								<span class="ico"></span>
+								<span class="device">Ceiling<br />Light</span>
+							</li>
+ -->							<li class="aircleaner">
+								<span id="AirCleaner" class="kwh">{{ SmartPlug.SmartPlug_Aircleaner.PowerPropertyStr }}W</span>
+								<div class="graph">
+									<span ng-style="GraphStyle.SmartPlug_Aircleaner" ></span>
+								</div>
+								<span class="ico"></span>
+								<span class="device">Air<br />Cleaner</span>
+							</li>
+						</ul>
+						
+						<div class="current">
+							Current Status : <span id="Current">{{ SmartPlug.TotalPowerProperty }} W</span>
+							Accumulative Status : <span id="Cumulative">{{ SmartPlug.TotalAccumulateEnergyProperty }} kWh</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<!-- Device Control -->
+		<div id="Control" style="display:none;">
+			<div class="Board">
+				<input type="hidden" name="aircon" value="" />	<!-- 에어컨 power on/off -->
+				<input type="hidden" name="washer_remote" value="on" />	<!-- 세탁기 remote on/off -->
+				<input type="hidden" name="washer" value="" />	<!-- 세탁기 power on/off -->
+				<input type="hidden" name="dryer_remote" value="on" />		<!-- 건조기 remote on/off -->
+				<input type="hidden" name="dryer" value="" />	<!-- 건조기 power on/off -->
+				<input type="hidden" name="stand" value="" />	<!-- 스탠드 power on/off -->
+				<input type="hidden" name="down" value="" />	<!-- 천장등 power on/off -->
+				<input type="hidden" name="surface" value="" />	<!-- 벽등 power on/off -->
+				<input type="hidden" name="air" value="" />		<!-- 공기청정기 power on/off -->
+				
+				<!-- 닫기 -->
+				<div class="pClose"><a onmousedown="menuOff();">Close</a></div>
+				<!-- 이전 -->
+				<div class="pBack"><a onmousedown="menuOn();">Back</a></div>
+				
+				<!-- 좌측 arrow -->
+				<div id="pageLeft" class="arrowLeft"><a onmousedown="moveDevice('prev');"></a></div>
+				<!-- 우측 arrow -->
+				<div id="pageRight" class="arrowRight"><a onmousedown="moveDevice('next');"></a></div>
+				
+				<!-- 에어컨 control -->
+				<div id="airconControl" class="control" style="display:;">
+					<input type="hidden" name="aircon_airclean" value="off" />	<!-- 에어컨 air clean on/off -->
+					<input type="hidden" name="aircon_fanVert" value="off" />	<!-- 에어컨 fan 수직 방향 on/off -->
+					<input type="hidden" name="aircon_fanHori" value="off" />	<!-- 에어컨 fan 수평 방향 on/off -->
+					<input type="hidden" name="aircon_reserve" value="off" />	<!-- 에어컨 시간예약 on/off -->
+					
+					<div class="part">
+						<div class="ctrlTop">
+							<!-- device 컨트롤 시 컨트롤에 대한 반응을 받으면, ico_on으로 class 변경 했다가 약 2~3초 후 다시 ico로 변경 -->
+							<div class="ico"><span class="menu1"></span></div>
+							<div class="deviceTitle">Air Conditioner</div>
+							<div class="Switch">
+								<div id="airconSwitch">
+								<span class="on"><a ng-click="toggleAirconditionerPower()">down</a></span>
+								<span class="off"><a ng-click="toggleAirconditionerPower()">up</a></span>
+<!-- 									<span class="on"><a onmousedown="save_airconInfo('switch', 'off');">On</a></span>
+									<span class="off" style="display:none;"><a onmousedown="save_airconInfo('switch', 'on');">Off</a></span>
+ -->								</div>
+							</div>
+							<!--
+							<div id="unit1" class="unit"><a onmousedown="save_airconInfo('unitchange', 'unit1');">F</a></div>
+							//-->
+						</div>
+						
+						<!-- power off 일 때 나타남 -->
+						<div id="airconDim" class="dim"></div>
+						
+						<div class="ctrlBody">
+							<div class="title">Temperature</div>
+							<div class="detail">Current Temperature<br /></div>
+							<span class="status">{{ Airconditioner.set_CurrentTemperatureF }}℉</span>
+							
+							<div class="detail1">Target Temperature</div>
+							<div class="mode">
+								<!-- <span class="down"><a onmousedown="save_airconInfo('unitcontrol', 'down');">down</a></span> -->
+								<!-- <span class="up"><a onmousedown="save_airconInfo('unitcontrol', 'up');">up</a></span> -->
+								<span class="down"><a ng-click="setAirconditionerTargetTemperature(Airconditioner.set_temperature-1)">down</a></span>
+								<span class="up"><a ng-click="setAirconditionerTargetTemperature(Airconditioner.set_temperature+1)">up</a></span>
+
+								<span id="aircon_temp" class="txt">{{ Airconditioner.set_temperatureF }}℉</span>
+							</div>
+						</div>
+						
+						<div class="ctrlBody">
+							<div class="title">Operation</div>
+							<div class="detail">Operation Mode</div>
+							<div class="mode">
+								<!-- <span class="down"><a onmousedown="save_airconInfo('mode', 'down');">down</a></span> -->
+								<!-- <span class="up"><a onmousedown="save_airconInfo('mode', 'up');">up</a></span> -->
+								<span class="down"><a ng-click="setAirconditionerModePrev()">down</a></span>
+								<span class="up"><a ng-click="setAirconditionerModeNext()">up</a></span>
+
+								<span id="aircon_opMode" class="txt">{{ Airconditioner.modeStr }}</span><!-- Cool, Dry, Heat, Aco, Fan -->
+							</div>
+							
+							<div class="detail1">Air Clean</div>
+							<!--div class="on"><a id="aircon_airclean" onmousedown="save_airconInfo('airclean', '');">off</a></div-->
+							<div class="Switch">
+								<div id="optSwitch">
+									<!-- <span class="on"  style="display:block;"><a onmousedown="save_airconInfo('airclean', 'off');">On</a></span> -->
+									<!-- <span class="off" style="display:none;"><a onmousedown="save_airconInfo('airclean', 'on');">Off</a></span> -->
+									<span class="on"  style="display:block;"><a ng-click="toggleAirconditionerAirClean()">On</a></span>
+									<span class="off" style="display:none;"><a ng-click="toggleAirconditionerAirClean()">Off</a></span>
+
+								</div>
+							</div>
+						</div>
+						
+						<div class="ctrlBody">
+							<div class="title">Fan Speed & Direction</div>
+							<div class="detail">Fan Speed</div>
+							<div class="mode">
+								<span class="down"><a ng-click="setAirconditionerFanPrev()">down</a></span>
+								<span class="up"><a ng-click="setAirconditionerFanNext()">up</a></span>
+								<!-- <span class="down"><a onmousedown="save_airconInfo('fanspeed', 'down');">down</a></span> -->
+								<!-- <span class="up"><a onmousedown="save_airconInfo('fanspeed', 'up');">up</a></span> -->
+								<span id="aircon_fanMode" class="txt">{{ Airconditioner.windStrengthStr }}</span> <!-- Auto, High, Mid, Low -->
+							</div>
+							
+							<div class="detail1">Fan Direction Vertical</div>
+							<!--div class="on"><a id="aircon_fanVert" onmousedown="btnOnOff('aircon_fanVert');">off</a></div-->
+							<div class="Switch">
+								<div id="fanSwitch">
+									<span class="on" style="display:block;"><a ng-click="setAirconditionerFanDirectoionVertical(0)">On</a></span>
+									<span class="off" style="display:none;"><a ng-click="setAirconditionerFanDirectoionVertical(100)">Off</a></span>
+								</div>
+							</div>
+							
+							<div class="detail1">Fan Direction Horizontal</div>
+							<!--div class="on"><a id="aircon_fanHori" onmousedown="btnOnOff('aircon_fanHori');">off</a></div-->
+							<div class="Switch">
+								<div id="directionSwitch">
+									<span class="on" style="display:block;"><a ng-click="setAirconditionerFanDirectoionHorizontal(0)">On</a></span>
+									<span class="off" style="display:none;"><a ng-click="setAirconditionerFanDirectoionHorizontal(100)">Off</a></span>
+								</div>
+							</div>
+						</div>
+						
+						<!--
+						<div class="ctrlBody">
+							<div class="title">Reservation</div>
+							<div class="detail">hour</div>
+							<div class="mode">
+								<span class="down"><a onmousedown="save_airconInfo('hour', 'down');"">down</a></span>
+								<span class="up"><a onmousedown="save_airconInfo('hour', 'up');"">up</a></span>
+								<span id="aircon_hour" class="txt">00</span>
+							</div>
+							<div class="on"><a id="aircon_reserve" onmousedown="btnOnOff('aircon_reserve');">off</a></div>
+							<div class="Switch">
+								<div id="reserveSwitch">
+									<span class="on" style="display:block;"><a onmousedown="save_airconInfo('reserve', 'off');">On</a></span>
+									<span class="off" style="display:none;"><a onmousedown="save_airconInfo('reserve', 'on');">Off</a></span>
+								</div>
+							</div>
+						</div>
+						//-->
+					</div>
+					
+					<!-- 에어컨 Status -->
+					<div id="airconStatus" class="ctrlStatus" style="display:;">
+						<div class="title">Energy<br />Consumption</div>
+						<div class="state">
+							Current : <span id="">{{SmartPlug.SmartPlug_AirConditioner.PowerProperty}} W</span><br />
+							Cumulative : <span id="">{{SmartPlug.SmartPlug_AirConditioner.AccumulateEnergyProperty}} kWh</span>
+						</div>
+					</div>
+				</div>
+				
+				<!-- 세탁기/건조기 control -->
+				<div id="cleanerControl" class="control" style="display:none;">
+					<input type="hidden" name="washer_course" value="off" />	<!-- 세탁기 course start -->
+					<input type="hidden" name="washer_delay" value="off" />	<!-- 세탁기 시간예약 on/off -->
+					<input type="hidden" name="washer_fresh" value="off" />		<!-- 세탁기 링클케어 on/off -->
+					<input type="hidden" name="dryer_delay" value="off" />		<!-- 건조기 시간예약 on/off -->
+					<input type="hidden" name="dryer_wrinkle" value="off" />	<!-- 건조기 링클케어 on/off -->
+					
+					<!-- wahser -->
+					<div id="washerControl" class="part2">
+						<div class="ctrlTop">
+							<div class="ico"><span class="menu2"></span></div>
+							<div class="deviceTitle">Washer</div>
+							<!--div id="washerBtn" class="offbtn"></div-->
+							<!--div id="washer_remote" class="remote">Remote<br />Start</div-->		<!-- 세탁기의 remote start 버튼이 눌러져 있을 때 class의 inactive 삭제 -->
+						</div>
+						
+						<!-- power off 일 때 나타남 -->
+						<!-- <div id="washerDim" class="dim"></div> -->
+						<div id="washerDim"></div>
+						
+						<div class="ctrlBody">
+							<div class="title">Status</div>
+							<div class="detail">Remaining Time</div>
+							<span class="status">{{WashingMachine.RemainingTime}}</span>
+							
+							<div class="detail1">Current Stage</div>
+							<span class="status">{{WashingMachine.MachineState}}</span>
+							
+							<div class="detail1">Current Course</div>
+							<span class="status">{{WashingMachine.Course}}</span>
+						</div>
+						
+						<div class="ctrlBody">
+							<div class="title">Control</div>
+							<div class="detail">Course Stop</div>
+							<div class="start"><a ng-click="onWasherStopClicked()">Stop</a></div>
+							<!--
+							<div class="detail">wrinkle care</div>
+							<div class="on"><a id="washer_wrinkle" onmousedown="btnOnOff('washer_wrinkle');">off</a></div>
+							
+							<div class="detail1">hour</div>
+							<div class="mode">
+								<span class="down"><a onmousedown="">down</a></span>
+								<span class="up"><a onmousedown="">up</a></span>
+								<span id="washer_hour" class="txt">00</span>
+							</div>
+							<div class="detail1">Minutes</div>
+							<div class="mode">
+								<span class="down"><a onmousedown="">down</a></span>
+								<span class="up"><a onmousedown="">up</a></span>
+								<span id="washer_min" class="txt">00</span>
+							</div>
+							
+							<div class="Switch">
+								<div id="delaySwitch">
+									<span class="on"><a onmousedown="">On</a></span>
+									<span class="off" style="display:none;"><a onmousedown="">Off</a></span>
+								</div>
+							</div>
+							//-->
+						</div>
+					</div>
+					
+					<!-- dryer -->
+					<div id="dryerControl" class="part3">
+						<div class="ctrlTop">
+							<div class="ico"><span class="menu3"></span></div>
+							<div class="deviceTitle">Dryer</div>
+							<!--div id="dryerBtn" class="offbtn"></div-->
+							<!-- <div id="dryer_remote" class="remote">Remote<br />Start</div> -->
+						</div>
+						
+						<!-- power off 일 때 나타남 -->
+						<div id="dryerDim"></div>
+						<!-- <div id="dryerDim" class="dim"></div> -->
+						
+						<div class="ctrlBody">
+							<div class="title">Status</div>
+							<div class="detail">Remaining Time</div>
+							<span class="status">00:00:00</span>
+							
+							<div class="detail1">Current Stage</div>
+							<span class="status">OFF</span>
+							
+							<div class="detail1">Current Course</div>
+							<span class="status"></span>
+						</div>
+						
+						<div class="ctrlBody">
+							<div class="title">Control</div>
+							<div class="detail">Course Stop</div>
+							<div class="start"><a ng-click="">Stop</a></div>
+						</div>
+					</div>
+					
+					<div class="fclear"></div>
+					
+					<!-- 세탁기 Status -->
+					<div id="washerStatus" class="ctrlStatus" style="display:;">
+						<div class="title">Energy<br />Consumption</div>
+						<div class="state">
+							Current : <span id="">{{SmartPlug.SmartPlug_Washer.PowerProperty}} W</span><br />
+							Cumulative : <span id="">{{SmartPlug.SmartPlug_Washer.AccumulateEnergyProperty}} kWh</span>
+						</div>
+					</div>
+					
+					<!-- 건조기 Status -->
+					<div id="dryerStatus" class="ctrlStatus" style="display:;">
+						<div class="title">Energy<br />Consumption</div>
+						<div class="state">
+							Current : <span id="">{{SmartPlug.SmartPlug_Dryer.PowerProperty}} W</span><br />
+							Cumulative : <span id="">{{SmartPlug.SmartPlug_Dryer.AccumulateEnergyProperty}} kWh</span>
+						</div>
+					</div>
+				</div>
+			
+				<!-- 냉장고 control -->
+				<div id="fridgeControl" class="control" style="display:none;">
+					<input type="hidden" name="fridge_door" value="" />		<!-- 냉장고 문 열림/닫힘 -->
+					<input type="hidden" name="fridge_saving" value="off" />	<!-- 냉장고 Smart saving on/off -->
+				
+					<div class="part">
+						<div class="ctrlTop">
+							<div class="ico"><span class="menu4"></span></div>
+							<div class="deviceTitle">Refrigerator</div>
+							<!--
+							<div id="unit2" class="unit"><a onmousedown="changeUnit('unit2');">F</a></div>
+							//-->
+						</div>
+						
+						<div class="ctrlBody">
+							<div class="title">Temperature</div>
+							<div class="detail">Fridge Temperature</div>
+							<div class="mode">
+								<span class="down"><a ng-click="setRefrigeratorFridgeTemperatureValue(Refrigerator.RefrigeratorFridgeTemperatureValue-1)">down</a></span>
+								<span class="up"><a ng-click="setRefrigeratorFridgeTemperatureValue(Refrigerator.RefrigeratorFridgeTemperatureValue+1)">up</a></span>
+								<span id="fridge_temp" class="txt">{{ Refrigerator.RefrigeratorFridgeTemperatureValue }}℉</span>
+							</div>
+							
+							<div class="detail1">Freezer Temperature</div>
+							<div class="mode">
+								<span class="down"><a ng-click="setRefrigeratorFreezerTemperatureValue(Refrigerator.RefrigeratorFreezerTemperatureValue-1)">down</a></span>
+								<span class="up"><a ng-click="setRefrigeratorFreezerTemperatureValue(Refrigerator.RefrigeratorFreezerTemperatureValue+1)">up</a></span>
+								<span id="freezer_temp" class="txt">{{ Refrigerator.RefrigeratorFreezerTemperatureValue }}℉</span>
+							</div>
+						</div>
+						
+						<div class="ctrlBody">
+							<div class="title">Operation</div>
+							<div class="detail">Smart Saving</div>
+							<!--div class="on"><a id="fridge_saving" onmousedown="btnOnOff('fridge_saving');">off</a></div-->
+							<div class="Switch">
+								<div id="savingSwitch">
+									<span class="on" ng-show="Refrigerator.RefrigeratorSmartSavingStatusValue"><a ng-click="setRefrigeratorSmartSaving(0)">On</a></span>
+									<!-- <span class="off" ng-show="Refrigerator.RefrigeratorIcePlusStatusValue"><a onmousedown="">Off</a></span> -->
+
+									<span class="off" ng-hide="Refrigerator.RefrigeratorSmartSavingStatusValue"><a ng-click="setRefrigeratorSmartSaving(3)">Off</a></span>
+								</div>
+							</div>
+							
+							<div class="detail1">Ice Plus</div>
+							<div class="Switch">
+								<div id="iceSwitch">
+									<span class="on" ng-hide="Refrigerator.RefrigeratorIcePlusStatusValue"> <a ng-click="toggleRefrigeratorIcePlusStatusValue()">On</a></span>
+									<span class="off" ng-show="Refrigerator.RefrigeratorIcePlusStatusValue"><a ng-click="toggleRefrigeratorIcePlusStatusValue()">Off</a></span>
+								</div>
+							</div>
+						</div>
+						
+						<div class="ctrlBody">
+							<div class="title">Door Status</div>
+							<div class="close">{{ Refrigerator.RefrigeratorDoorOpenStatusValue }}</div>	<!-- 문 열려있을 때 class값이 open으로 변경, 텍스트도 open으로 변경 -->
+						</div>
+					</div>
+					
+					<!-- 냉장고 Status -->
+					<div id="fridgeStatus" class="ctrlStatus" style="display:;">
+						<div class="title">Energy<br />Consumption</div>
+						<div class="state">
+							Current : <span id="">{{SmartPlug.SmartPlug_Refrigerator.PowerProperty}} W</span><br />
+							Cumulative : <span id="">{{SmartPlug.SmartPlug_Refrigerator.AccumulateEnergyProperty}} kWh</span>
+						</div>
+					</div>
+				</div>
+			
+				<!-- 청소기 control -->
+				<div id="vacuumControl" class="control" style="display:none;">
+					<input type="hidden" name="vacuum_turbo" value="off" />	<!-- 청소기 turbo mode on/off -->
+					
+					<div class="part">
+						<div class="ctrlTop">
+							<div class="ico"><span class="menu5"></span></div>
+							<div class="deviceTitle">Robot Cleaner</div>
+						</div>
+						
+						<div class="ctrlBody">
+							<div class="title">Status</div>
+							<div class="detail">Current Mode</div>
+							<span class="status" style="width:250px;">{{ Roboking.CleanModePropertyStr }}</span>	<!-- ZIGZAG / CELL BY CELL / SPOT -->
+							
+							<div class="detail">Device Status</div>
+							<span class="status">{{ Roboking.CleanOperationStatusPropertyStr }}</span>	<!-- CLEANING / HOMING / STOP / CHARGING -->
+							
+							<div class="detail1">Battery Status</div>
+							<span class="status">{{ Roboking.BatteryLevel }}</span>
+						</div>
+						
+						<div class="ctrlBody">
+							<div class="title">Control</div>
+							<div class="detail">Cleaning Mode</div>
+							<div class="mode">
+								<span class="down"><a ng-click="setCleanModeProperty(Roboking.CleanModeProperty-1)">down</a></span>
+								<span class="up"><a ng-click="setCleanModeProperty(Roboking.CleanModeProperty+1)">up</a></span>
+								<span id="vacuum_mode" class="txt">{{ Roboking.CleanModePropertyStr }}</span>
+							</div>
+							
+							<!-- 실행 버튼 -->
+							<div class="vacuumBtns">
+								<a href="javascript:;" ng-click="Roboking.start()">Start</a>
+								<a href="javascript:;" ng-click="Roboking.homing()">Homing</a>
+								<a href="javascript:;" ng-click="Roboking.stop()">Stop</a>
+							</div>
+							<!--
+							<div class="Switch">
+								<div id="cleanSwitch">
+									<span class="on"><a onmousedown="">On</a></span>
+									<span class="off" style="display:none;"><a onmousedown="">Off</a></span>
+								</div>
+							</div>
+							
+							<div class="detail1">Turbo Mode</div>
+							<div class="on"><a id="vacuum_turbo" onmousedown="btnOnOff('vacuum_turbo');">off</a></div>
+							<div class="Switch">
+								<div id="turboSwitch">
+									<span class="on"><a onmousedown="">On</a></span>
+									<span class="off" style="display:none;"><a onmousedown="">Off</a></span>
+								</div>
+							</div>
+							//-->
+						</div>
+					</div>
+					
+					<!-- 청소기 Status -->
+					<div id="vacuumStatus" class="ctrlStatus" style="display:;">
+						<div class="title">Energy<br />Consumption</div>
+						<div class="state">
+							Current : <span id="">{{SmartPlug.SmartPlug_Roboking.PowerProperty}} W</span><br />
+							Cumulative : <span id="">{{ SmartPlug.SmartPlug_Roboking.AccumulateEnergyProperty}} kWh</span>
+						</div>
+					</div>
+				</div>
+			
+				<!-- 오븐 control -->
+				<div id="ovenControl" class="control" style="display:none;">
+					<input type="hidden" name="ovenPause" value="pause" />	<!-- 오븐 pause on/off -->
+					
+					<div class="part">
+						<div class="ctrlTop">
+							<div class="ico"><span class="menu6"></span></div>
+							<div class="deviceTitle">Oven</div>
+							<!--
+							<div id="unit3" class="unit"><a onmousedown="changeUnit('unit3');">F</a></div>
+							//-->
+						</div>
+						
+						<div class="ctrlBody">
+							<div class="title">Current Temperature</div>
+							<span class="status">{{ Oven.OvenCurrentTemperatureValue }}℉</span>
+<!-- 							<div class="pause"><a id="ovenPause" onmousedown="btnOnOff('ovenPause');">{{ Oven.OvenOperationStatusValue }}</a></div>
+ -->						
+ 							<span class="status oven">{{ Oven.OvenOperationStatusValue }}</span>
+ 						</div>
+						
+						<div class="ctrlBody">
+							<div class="title">Status</div>
+							<div class="detail">Cooking Status</div>
+							<span class="status oven">{{ Oven.OvenCookMenu }}</span>	<!-- Reheat/Grill/CONv./Steam/Food Dry/Toast/Slow Cook/Proof/Healthy Fly/Defrost -->
+							<div class="detail1">Remaining Time</div>
+							<span class="status">{{ Oven.OvenRemainingTimeValue }}</span>
+						</div>
+					</div>
+					
+					<!-- 오븐 Status -->
+					<div id="ovenStatus" class="ctrlStatus" style="display:;">
+						<div class="title">Energy<br />Consumption</div>
+						<div class="state">
+							Current : <span id="">{{SmartPlug.SmartPlug_Oven.PowerProperty}} W</span><br />
+							Cumulative : <span id="">{{ SmartPlug.SmartPlug_Oven.AccumulateEnergyProperty}} kWh</span>
+						</div>
+					</div>
+				</div>
+			
+				<!-- Stand Light control -->
+				<div id="standControl" class="control" style="display:none;">
+					<div class="part">
+						<div class="ctrlTop">
+							<div class="ico"><span class="menu7"></span></div>
+							<div class="deviceTitle">Stand Light</div>
+							<div class="Switch">
+								<div id="standSwitch">
+									<span class="on"><a ng-click="toggleLightStand()">On</a></span>
+									<span class="off" style="display:none;"><a ng-click="toggleLightStand()">Off</a></span>
+								</div>
+							</div>
+						</div>
+						
+						<!-- power off일 때 나타남 -->
+						<div id="standDim" class="dim"></div>
+						
+						<div class="ctrlBody">
+							<div class="title">Dimming %</div>
+							<div class="mode">
+								<span class="down"><a ng-click="setLightStandDimLevel(Light.DimLevelGroupStandProperty-5)">down</a></span>
+								<span class="up"><a ng-click="setLightStandDimLevel(Light.DimLevelGroupStandProperty+5)">up</a></span>
+								<span id="stand_mode" class="txt">{{ Light.DimLevelGroupStandProperty }}</span>
+							</div>
+						</div>
+					</div>
+					
+					<!-- Stand Light Status -->
+					<div id="standStatus" class="ctrlStatus" style="display:;">
+						<div class="title">Energy<br />Consumption</div>
+						<div class="state">
+							Current : <span id="">{{SmartPlug.SmartPlug_Light.PowerProperty}} W</span><br />
+							Cumulative : <span id="">{{ SmartPlug.SmartPlug_Light.AccumulateEnergyProperty}} kWh</span>
+						</div>
+					</div>
+				</div>
+			
+				<!-- Down Light control -->
+				<div id="downControl" class="control" style="display:none;">
+					<div class="part">
+						<div class="ctrlTop">
+							<div class="ico"><span class="menu8"></span></div>
+							<div class="deviceTitle">Down Light</div>
+							<div class="Switch">
+								<div id="downSwitch">
+									<span class="on"><a ng-click="toggleLightDown()">On</a></span>
+									<span class="off" style="display:none;"><a ng-click="toggleLightDown()">Off</a></span>
+								</div>
+							</div>
+						</div>
+						
+						<!-- power off일 때 나타남 -->
+						<div id="downDim" class="dim"></div>
+						
+						<div class="ctrlBody">
+							<div class="title">Dimming %</div>
+							<div class="mode">
+								<span class="down"><a ng-click="setLightDownDimLevel(Light.DimLevelGroupDownProperty-5)">down</a></span>
+								<span class="up"><a ng-click="setLightDownDimLevel(Light.DimLevelGroupDownProperty+5)">up</a></span>
+								<span id="stand_mode" class="txt">{{ Light.DimLevelGroupDownProperty }}</span>
+							</div>
+						</div>
+					</div>
+					
+					<!-- Stand Light Status -->
+					<div id="standStatus" class="ctrlStatus" style="display:;">
+						<div class="title">Energy<br />Consumption</div>
+						<div class="state">
+							Current : <span id="">{{SmartPlug.SmartPlug_Light.PowerProperty}} W</span><br />
+							Cumulative : <span id="">{{ SmartPlug.SmartPlug_Light.AccumulateEnergyProperty}} kWh</span>
+						</div>
+					</div>
+				</div>
+			
+				<!-- Surface Mount Light control -->
+				<div id="surfaceControl" class="control" style="display:none;">
+					<div class="part">
+						<div class="ctrlTop">
+							<div class="ico"><span class="menu9"></span></div>
+							<div class="deviceTitle">Ceiling Light</div>
+							<div class="Switch">
+								<div id="surfaceSwitch">
+									<span class="on"><a ng-click="toggleLightSurface()">On</a></span>
+									<span class="off" style="display:none;"><a ng-click="toggleLightSurface()">Off</a></span>
+								</div>
+							</div>
+						</div>
+						
+						<!-- power off일 때 나타남 -->
+						<div id="surfaceDim" class="dim"></div>
+						
+						<div class="ctrlBody">
+							<div class="title">Dimming %</div>
+							<div class="mode">
+								<span class="down"><a ng-click="setLightSurfaceDimLevel(Light.DimLevelGroupSurfaceMountProperty-5)">down</a></span>
+								<span class="up"><a ng-click="setLightSurfaceDimLevel(Light.DimLevelGroupSurfaceMountProperty+5)">up</a></span>
+								<span id="stand_mode" class="txt">{{ Light.DimLevelGroupSurfaceMountProperty }}</span>
+							</div>
+						</div>
+					</div>
+					
+					<!-- Surface Mount Light Status -->
+					<div id="surfaceStatus" class="ctrlStatus" style="display:;">
+						<div class="title">Energy<br />Consumption</div>
+						<div class="state">
+							Current : <span id="">{{SmartPlug.SmartPlug_Light.PowerProperty}} W</span><br />
+							Cumulative : <span id="">{{ SmartPlug.SmartPlug_Light.AccumulateEnergyProperty}} kWh</span>
+						</div>
+					</div>
+				</div>
+			
+				<!-- 공기청정기 control -->
+				<div id="airControl" class="control" style="display:none;">
+					<div class="part">
+						<div class="ctrlTop">
+							<div class="ico"><span class="menu10"></span></div>
+							<div class="deviceTitle">Air Cleaner</div>
+							<div class="Switch">
+								<div id="airSwitch">
+									<span class="on" ><a ng-click="toggleAirCleanerStatus()">On</a></span>
+									<span class="off" style="display:none;"><a ng-click="toggleAirCleanerStatus()">Off</a></span>
+								</div>
+							</div>
+						</div>
+						
+						<!-- power off일 때 나타남 -->
+						<div id="airDim" class="dim"></div>
+						
+						<div class="ctrlBody">
+							<div class="title">Energy Consumption State</div>
+							<span class="status">{{SmartPlug.SmartPlug_Aircleaner.AccumulateEnergyProperty}} kWh</span>
+						</div>
+					</div>
+					
+					<!-- Air Cleaner Status -->
+					<div id="airStatus" class="ctrlStatus" style="display:;">
+						<div class="title">Energy<br />Consumption</div>
+						<div class="state">
+							Current : <span id="">{{SmartPlug.SmartPlug_Aircleaner.PowerProperty}} W</span><br />
+							Cumulative : <span id="">{{SmartPlug.SmartPlug_Aircleaner.AccumulateEnergyProperty}} kWh</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</form>
+	<!--// form end -->
+	</div>
+	
+	<!-- Vod -->
+	<div id="Vod">
+<!-- 		<video controls>
+			<source src="./g3.mp4" type="video/mp4" autoplay loop>
+ -->		
+ 		<!-- <video src="http://192.168.0.200/1005_Break_up.wmv" type="video/wmv" width="1920" height="1080" autoplay loop></video> -->
+		<!-- <video src="https://googledrive.com/host/0B7SFAKokSK1YVnU2WUVGNlZBSFU" type="video/webm" width="1920" height="1080" autoplay loop></video> -->
+
+		<video autoplay loop width="1920" height="1080">
+			<source src="http://192.168.0.200/1005_Break_up.webm" type="video/webm">	  
+
+			Your browser does not support the video tag.
+		</video>
+ 		
+		<!-- </video> -->
+	</div>
+</div>
+
+
+<script type="text/javascript" src="js/alljoyn_init.js"></script>
+<script type="text/javascript" src="js/async.js"></script>
+<script type="text/javascript" src="js/interfaces.js"></script>               
+<script type="text/javascript">
+	console.log("init");
+  var myApp = angular.module('cesApp', []);
+  console.log(myApp);
+</script>
+<script type="text/javascript" src="js/proxyDevice.js"></script>
+<script type="text/javascript" src="js/main.js"></script>
+
+</body>
+</html>
